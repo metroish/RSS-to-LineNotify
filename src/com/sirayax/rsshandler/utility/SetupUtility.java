@@ -1,49 +1,56 @@
 package com.sirayax.rsshandler.utility;
 
-import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class SetupUtility {
 
+    private Properties properties;
+    private String propertiesPath;
+    private SimpleDateFormat formatter;
+
+    public SetupUtility() {
+        propertiesPath = Objects.requireNonNull(getClass().getClassLoader().getResource("")).getPath() + "app.properties";
+        formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try {
+            properties = new Properties();
+            properties.load(new FileInputStream(propertiesPath));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String loadLineNotifyToken() {
+        return properties.getProperty("RSS.Line.Notify.Token");
+    }
+
+    public String loadLineNotifyURL() {
+        return properties.getProperty("RSS.Line.Notify.URL");
+    }
+
     public ArrayList<String> loadURL() {
-        ArrayList<String> urlList = new ArrayList<>();
-        try {
-            BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(ClassLoader.getSystemResource("url.txt").toURI()));
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                urlList.add(line);
-            }
-            bufferedReader.close();
-        } catch (IOException | URISyntaxException e) {
-            e.printStackTrace();
-        }
-        return urlList;
+        return new ArrayList<>(Arrays.asList(properties.getProperty("RSS.URL.List").split(";")));
     }
 
-    public String recordHandleTime(String type) {
+    public Date loadLastExecutionTime() {
         try {
-            if ("read".equals(type)) {
-                BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(ClassLoader.getSystemResource("lastOrder.txt").toURI()));
-                String line = bufferedReader.readLine();
-                if (line != null) {
-                    bufferedReader.close();
-                    return line;
-                } else {
-                    return String.valueOf(System.currentTimeMillis() - 1000 * 60 * 60 * 24);
-                }
-            }
-            if ("write".equals(type)) {
-                Files.write(Paths.get(ClassLoader.getSystemResource("lastOrder.txt").toURI()), String.valueOf(System.currentTimeMillis()).getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
-            }
-        } catch (IOException | URISyntaxException e) {
+            return formatter.parse(properties.getProperty("RSS.Last.Execution"));
+        } catch (ParseException e) {
             e.printStackTrace();
         }
-        return "OK";
+        return new Date(System.currentTimeMillis() - 1000 * 60 * 60 * 12);
     }
 
+    public void saveLastExecutionTime() {
+        try {
+            properties.setProperty("RSS.Last.Execution", formatter.format(new Date()));
+            properties.store(new FileWriter(propertiesPath), null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

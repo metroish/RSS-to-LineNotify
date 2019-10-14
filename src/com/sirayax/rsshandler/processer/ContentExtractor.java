@@ -24,23 +24,19 @@ public class ContentExtractor {
     private XMLEvent xmlEvent;
     private ArrayList<ArticleObject> articleList;
     private ArticleObject articleObject;
-    private String filterTime;
+    private Date filterTime;
 
     public ContentExtractor() {
-        this("NA");
+        this(null);
     }
 
-    public ContentExtractor(String cuttingPoint) {
+    public ContentExtractor(Date cuttingPoint) {
         factory = XMLInputFactory.newInstance();
         filterTime = cuttingPoint;
     }
 
     public ArrayList<ArticleObject> extract(String url) {
         articleList = new ArrayList<>();
-        Date filteredOldArticleDate = null;
-        if (!"NA".equals(filterTime)) {
-            filteredOldArticleDate = new Date(Long.parseLong(filterTime));
-        }
         try {
             eventReader = factory.createXMLEventReader(new URL(url).openStream());
             while (eventReader.hasNext()) {
@@ -70,8 +66,8 @@ public class ContentExtractor {
                 if (xmlEvent.isEndElement()) {
                     EndElement endElement = xmlEvent.asEndElement();
                     if ("item".equalsIgnoreCase(endElement.getName().getLocalPart())) {
-                        if (filteredOldArticleDate != null) {
-                            if (convertStringToDate(articleObject.getPubDate()).before(filteredOldArticleDate)) {
+                        if (filterTime != null) {
+                            if (convertStringToDate(articleObject.getPubDate()).before(filterTime)) {
                                 articleObject = null;
                                 continue;
                             }
